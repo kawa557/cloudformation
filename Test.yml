@@ -1,0 +1,202 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Test template
+Resources:
+  #VPC
+  VPC:
+    Type: 'AWS::EC2::VPC'
+    Properties:
+      CidrBlock: 10.1.0.0/16
+      InstanceTenancy: default
+      EnableDnsSupport: 'true'
+      EnableDnsHostnames: 'true'
+      Tags:
+        - Key: Name
+          Value: TestVPC
+  #subunet
+  TestEc2Subnet1a:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      CidrBlock: 10.1.0.0/24
+      AvailabilityZone: ap-northeast-1a
+      VpcId: !Ref TestVPC
+      MapPublicIpOnLaunch: 'true'
+      Tags:
+        - Key: Name
+          Value: TestEc2Subnet1a
+  TestDbSubnet1c:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      CidrBlock: 10.1.1.0/24
+      AvailabilityZone: ap-northeast-1c
+      VpcId: !Ref TestVPC
+      MapPublicIpOnLaunch: 'true'
+      Tags:
+        - Key: Name
+          Value: TestDbSubnet1c
+  #InternetGateway
+  InternetGateway:
+    Type: 'AWS::EC2::InternetGateway'
+    Properties:
+      Tags:
+        - Key: Name
+          Value: Test-gw
+    # VPCGatewayAttachment
+  AttachGateway:
+      Type: 'AWS::EC2::VPCGatewayAttachment'
+      Properties:
+        VpcId: !Ref TestVPC
+        InternetGatewayId: !Ref InternetGateway
+  # RouteTable
+  RouteTable:
+    Type: 'AWS::EC2::RouteTable'
+    DependsOn: AttachGateway
+    Properties:
+      VpcId: !Ref TestVPC
+      Tags:
+        - Key: Name
+          Value: Test-route
+  Route1:
+    Type: 'AWS::EC2::Route'
+    DependsOn: AttachGateway
+    Properties:
+      RouteTableId: !Ref RouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+  RouteLocal:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      RouteTableId: !Ref RouteTable
+      SubnetId: !Ref TestEc2Subnet1a
+  # SecurityGroup
+  SecurityGroupEC2:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: EC2 SecurityGroup
+      VpcId: !Ref TestVPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 3000
+          ToPort: 3000
+          CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: test-securityGroup-ec2
+  SecurityGroupRDS:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: RDS SecurityGroup
+      VpcId: !Ref TestVPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 3306
+          ToPort: 3306
+          SourceSecurityGroupId: !Ref SecurityGroupEC2
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: test-securityGroup-rds
+  #EC2
+  EC2:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      DisableApiTermination: 'false'
+      InstanceInitiatedShutdownBehavior: stop
+      ImageId: ami-0c3fd0f5d33134a76
+      InstanceType: t2.micro
+      SubnetId: !Ref TestEc2Subnet1a
+      KeyName: Kazu-kye
+      Monitoring: 'false'
+      Tags:
+        - Key: Name
+          Value: Test-EC2
+      SecurityGroupIds:
+        - !Ref SecurityGroupEC2
+  #RDS
+  RDS:
+    Type: 'AWS::RDS::DBInstance'
+    Properties:
+      AllocatedStorage: '20'
+      AllowMajorVersionUpgrade: 'false'
+      AutoMinorVersionUpgrade: 'true'
+      DBInstanceClass: db.t2.micro
+      Port: '3306'
+      StorageType: gp2
+      BackupRetentionPeriod: '1'
+      MasterUsername: kawa557
+      MasterUserPassword: kawa1849
+      PreferredBackupWindow: '17:40-18:10'
+      PreferredMaintenanceWindow: 'mon:15:41-mon:16:11'
+      DBName: TestDatabase3
+      Engine: mysql
+      EngineVersion: 5.7.22
+      LicenseModel: general-public-license
+      DBSubnetGroupName: !Ref DBSubnetGroup
+      VPCSecurityGroups:
+        - !Ref SecurityGroupRDS
+      Tags:
+        - Key: Name
+          Value: Test-rds
+  DBSubnetGroup:
+    Type: 'AWS::RDS::DBSubnetGroup'
+    Properties:
+      DBSubnetGroupDescription: DB Subnet Group for Test
+      SubnetIds:
+        - !Ref TestEc2Subnet1a
+        - !Ref TestDbSubnet1c
+  # ELB
+  ELB:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: test-elb
+      SecurityGroups:
+        - !Ref SecurityGroupEC2
+      Subnets:
+        - !Ref TestEc2Subnet1a
+        - !Ref TestDbSubnet1c
+      Tags:
+        - Key: Name
+          Value: aws-study-elb
+  ELBTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: test-elb-target-group
+      Port: 80
+      Protocol: HTTP
+      VpcId: !Ref TestVPC
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 2
+      HealthCheckTimeoutSeconds: 5
+      HealthCheckProtocol: HTTP
+      HealthCheckPath: "/"
+      HealthCheckPort: "traffic-port"
+      HealthCheckIntervalSeconds: 10
+      Matcher:
+        HttpCode: 200
+      Tags:
+        - Key: Name
+          Value: aws-study-elb-target-group
+      Targets:
+        - Id: !Ref EC2
+          Port: 80
+  ELBListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref ELB
+      DefaultActions:
+        - TargetGroupArn: !Ref ELBTargetGroup
+          Type: forward
+      Port: 80
+      Protocol: HTTP
