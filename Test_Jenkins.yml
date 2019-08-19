@@ -1,0 +1,108 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Test Jenkins template
+Resources:
+  #VPC
+  VPC:
+    Type: 'AWS::EC2::VPC'
+    Properties:
+      CidrBlock: 10.2.0.0/16
+      InstanceTenancy: default
+      EnableDnsSupport: 'true'
+      EnableDnsHostnames: 'true'
+      Tags:
+        - Key: Name
+          Value: Test-Jenkins-VPC
+  #subunet
+  TestJenkinsEc2Subnet1a:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      CidrBlock: 10.2.0.0/24
+      AvailabilityZone: ap-northeast-1a
+      VpcId: !Ref Test-Jenkins-VPC
+      MapPublicIpOnLaunch: 'true'
+      Tags:
+        - Key: Name
+          Value: TestJenkinsEc2Subnet1a
+  #InternetGateway
+  InternetGateway:
+    Type: 'AWS::EC2::InternetGateway'
+    Properties:
+      Tags:
+        - Key: Name
+          Value: Test-Jenkins-gw
+    # VPCGatewayAttachment
+  AttachGateway:
+      Type: 'AWS::EC2::VPCGatewayAttachment'
+      Properties:
+        VpcId: !Ref Test-Jenkins-VPC
+        InternetGatewayId: !Ref InternetGateway
+  # RouteTable
+  RouteTable:
+    Type: 'AWS::EC2::RouteTable'
+    DependsOn: AttachGateway
+    Properties:
+      VpcId: !Ref Test-Jenkins-VPC
+      Tags:
+        - Key: Name
+          Value: Test-Jenkins-route
+  Route1:
+    Type: 'AWS::EC2::Route'
+    DependsOn: AttachGateway
+    Properties:
+      RouteTableId: !Ref RouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+  RouteLocal:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      RouteTableId: !Ref RouteTable
+      SubnetId: !Ref TestJenkinsEc2Subnet1a
+  # SecurityGroup
+  SecurityGroupEC2:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: EC2 SecurityGroup
+      VpcId: !Ref Test-Jenkins-VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 3000
+          ToPort: 3000
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 8080
+          ToPort: 8080
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 8080
+          ToPort: 8080
+          CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: test-securityGroup-ec2
+  #EC2
+  EC2:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      DisableApiTermination: 'false'
+      InstanceInitiatedShutdownBehavior: stop
+      ImageId: ami-0c3fd0f5d33134a76
+      InstanceType: t2.micro
+      SubnetId: !Ref TestJenkinsEc2Subnet1a
+      KeyName: Kazu-kye
+      Monitoring: 'false'
+      Tags:
+        - Key: Name
+          Value: Test-EC2
+      SecurityGroupIds:
+        - !Ref SecurityGroupEC2
