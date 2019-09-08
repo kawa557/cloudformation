@@ -114,7 +114,7 @@ Resources:
     Properties:
       DisableApiTermination: 'false'
       InstanceInitiatedShutdownBehavior: stop
-      ImageId: ami-0c3fd0f5d33134a76
+      ImageId: ami-07c140290c4db991e
       InstanceType: t2.micro
       SubnetId: !Ref TestEc2Subnet1a
       KeyName: Kazu-kye
