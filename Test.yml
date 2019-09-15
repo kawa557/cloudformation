@@ -125,7 +125,7 @@ Resources:
       SecurityGroupIds:
         - !Ref SecurityGroupEC2
   #RDS
-  RDS:
+  Test-rds:
     Type: 'AWS::RDS::DBInstance'
     Properties:
       AllocatedStorage: '20'
