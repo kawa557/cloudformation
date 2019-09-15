@@ -125,7 +125,7 @@ Resources:
       SecurityGroupIds:
         - !Ref SecurityGroupEC2
   #RDS
-  TestRds:
+  TestDatabase3:
     Type: 'AWS::RDS::DBInstance'
     Properties:
       AllocatedStorage: '20'
@@ -139,7 +139,7 @@ Resources:
       MasterUserPassword: kawa1849
       PreferredBackupWindow: '17:40-18:10'
       PreferredMaintenanceWindow: 'mon:15:41-mon:16:11'
-      DBName: TestDatabase3
+      DBInstanceIdentifier: TestDatabase3
       Engine: mysql
       EngineVersion: 5.7.22
       LicenseModel: general-public-license
@@ -148,7 +148,7 @@ Resources:
         - !Ref SecurityGroupRDS
       Tags:
         - Key: Name
-          Value: TestRds
+          Value: TestDatabase3
   DBSubnetGroup:
     Type: 'AWS::RDS::DBSubnetGroup'
     Properties:
