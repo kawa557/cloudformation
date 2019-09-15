@@ -148,7 +148,7 @@ Resources:
         - !Ref SecurityGroupRDS
       Tags:
         - Key: Name
-          Value: Test-rds
+          Value: TestRds
   DBSubnetGroup:
     Type: 'AWS::RDS::DBSubnetGroup'
     Properties:
