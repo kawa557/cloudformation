@@ -135,7 +135,6 @@ Resources:
       Port: '3306'
       StorageType: gp2
       BackupRetentionPeriod: '1'
-      CharacterSetName: utf8
       MasterUsername: kawa557
       MasterUserPassword: kawa1849
       PreferredBackupWindow: '17:40-18:10'
