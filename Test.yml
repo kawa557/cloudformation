@@ -39,7 +39,7 @@ Resources:
     Properties:
       Tags:
         - Key: Name
-          Value: Test-gw
+          Value: Test-igw
     # VPCGatewayAttachment
   AttachGateway:
       Type: 'AWS::EC2::VPCGatewayAttachment'
@@ -54,7 +54,7 @@ Resources:
       VpcId: !Ref TestVPC
       Tags:
         - Key: Name
-          Value: Test-route
+          Value: Test-rtb
   Route1:
     Type: 'AWS::EC2::Route'
     DependsOn: AttachGateway
