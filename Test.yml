@@ -11,7 +11,7 @@ Resources:
       EnableDnsHostnames: 'true'
       Tags:
         - Key: Name
-          Value: TestVPC
+          Value: Test-VPC
   #subunet
   TestSubnet1a:
     Type: 'AWS::EC2::Subnet'
