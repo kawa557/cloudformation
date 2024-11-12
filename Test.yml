@@ -58,7 +58,7 @@ Resources:
       VpcId: !Ref TestVPC
       Tags:
         - Key: Name
-          Value: Test-route
+          Value: Test-Route
   Route1:
     Type: 'AWS::EC2::Route'
     DependsOn: AttachGateway
